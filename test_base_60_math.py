@@ -58,15 +58,19 @@ def test_subtraction_number():
 
 
 def test_subtraction_fraction():
-    assert base_60_math.add_items_in_list_fraction([30, 40, 20], [5, 5, 40]) == ([35, 46, 0], 0,)
+    # 30 40 20
+    # 5   5 40
+    # 25 34 40
+    assert base_60_math.subtract_fraction([30, 40, 20], [5, 5, 40]) == ([25, 34, 40], 0,)
+    assert base_60_math.subtract_fraction([5, 5, 40], [30, 40, 20]) == ([25, 34, 40], -1,)
 
     a = base_60_math.Base60.from_commas('1,2,3,4,5')
     b = base_60_math.Base60.from_commas('59,59,3,5')
-    c = base_60_math.add_items_in_list_fraction(a.number, b.number)
+    c = base_60_math.subtract_fraction(a.number, b.number)
     #  [59,59,3, 5, 0]
     #  [1, 2, 3, 4, 5]
     # 1[1, 1, 6, 9, 5]
-    assert c == ([1, 1, 6, 9, 5], 1,)
+    assert c == ([58, 57, 0, 0, 55], -1,)
 
 ###############
 
@@ -75,6 +79,7 @@ def test_comparator_truthy():
     assert base_60_math.comparator([30, 27], [59]) == (True, False,)
     assert base_60_math.comparator([30, 27], [19, 39]) == (True, False,)
     assert base_60_math.comparator([30, 27], [30, 26]) == (True, False,)
+    assert base_60_math.comparator(reverse([20, 40, 30]), reverse([40, 5, 5]), True) == (True,False,)
     assert base_60_math.comparator([30, 27], [30, 27]) == (False, True,)
 
 
