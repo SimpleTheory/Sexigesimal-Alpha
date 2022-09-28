@@ -2,7 +2,7 @@ import copy
 import functools
 import random
 import pysnooper
-
+from collections.abc import Iterable
 
 # Wrappers -------------------------------------------------------------------------------------------------------------
 def absolute(func):
@@ -171,7 +171,11 @@ def swap(x, y): return y, x,
 def stringify(x): return [str(i) for i in x]
 
 
-def absolutify(x): return [abs(i) for i in x]
+def absolutify(x):
+    if isinstance(x, list):
+        return [abs(i) for i in x]
+    else:
+        return abs(x)
 
 
 def reverse(x): return x[::-1]
@@ -309,7 +313,6 @@ def reflect60(n: list): return [60 - i for i in n]
 
 
 # Arithmetic Functions -------------------------------------------------------------------------------------------------
-@pysnooper.snoop()
 def add_items_in_list_number(l1, l2):
     rl1, rl2 = prep_compare(l1, l2, True, True)
 
@@ -341,7 +344,6 @@ def add_items_in_list_fraction(l1, l2):
     return added_list, mod
 
 
-@pysnooper.snoop()
 def lazy_addition(number1: Base60 | AbsBase60, number2: Base60 | AbsBase60):
     n1 = number1.copy()
     n2 = number2.copy()
@@ -361,7 +363,7 @@ def lazy_addition(number1: Base60 | AbsBase60, number2: Base60 | AbsBase60):
     return AbsBase60(sum_, fraction=fraction)
 
 
-# ----
+# ---- Subtraction
 def subtract_number(l1, l2):
     gr, eq = comparator(l1, l2)
     if eq:
@@ -435,11 +437,13 @@ def lazy_subtraction(subtractee: Base60 | AbsBase60, subtractor: Base60 | AbsBas
 # Multiplicative -------------------------------------------------------------------------------------------------------
 
 @copy_args
-@pysnooper.snoop()
 def int_multiplication(n1, n2):
-    n1, n2 = absolutify([n1, n2])
+    n1 = absolutify(n1)
+    n2 = absolutify(n2)
+    print(type(n2))
     sum_ = AbsBase60.zero()
-    for i in range(int(n2)):
+    r = range(len(n2)) if isinstance(n2, list) else range(int(n2))
+    for _ in r:
         sum_ += n1
     return sum_
 
@@ -467,9 +471,13 @@ def multiply(n1: Base60 | AbsBase60, n2: AbsBase60 | Base60):
     n1_whole = {'number': n1.number + n1.fraction, 'seximals': len(n1.fraction)}
     n2_whole = {'number': n2.number + n2.fraction, 'seximals': len(n2.fraction)}
     total_seximals = n1_whole['seximals'] + n2_whole['seximals']
-    total_whole_num = int_multiplication(n1_whole['number'], n2_whole['number'])
-    new_fractions = total_whole_num[:]
-
+    total_whole_num = int_multiplication(AbsBase60(n1_whole['number']), AbsBase60(n2_whole['number']))
+    r_twn = reverse(total_whole_num.number)
+    fraction = r_twn[:total_seximals]
+    numbers = r_twn[total_seximals:]
+    fraction.reverse()
+    numbers.reverse()
+    return AbsBase60(numbers, fraction)
 
 # Base 60 Sorting ------------------------------------------------------------------------------------------------------
 
