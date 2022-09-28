@@ -3,6 +3,7 @@ import base_60_math
 
 def reverse(x): return x[::-1]
 
+
 ###################
 
 
@@ -19,6 +20,7 @@ def test_base60_unit_addition():
 def test_base60_unit_subtraction():
     assert base_60_math.base60_unit_subtraction(3, 59) == (4, -1,)
     assert base_60_math.base60_unit_subtraction(5, 4) == (1, 0,)
+
 
 #####################
 
@@ -72,14 +74,38 @@ def test_subtraction_fraction():
     # 1[1, 1, 6, 9, 5]
     assert c == ([58, 57, 0, 0, 55], -1,)
 
+
+def test_lazy_sub():
+    a = base_60_math.lazy_subtraction(base_60_math.Base60.from_commas('4,16;18'),
+                                      base_60_math.Base60.from_commas('1,12;6'))
+    b = base_60_math.lazy_subtraction(base_60_math.Base60.from_commas('1,12;6'),
+                                      base_60_math.Base60.from_commas('4,16;18'))
+    expected = base_60_math.Base60.from_commas('3,4;12')
+    assert str(a[0]) == str(expected)
+    assert str(b[0]) == str(expected)
+    assert a[1] is False
+    assert b[1] is True
+
+
+def test_lazy_add():
+    a = base_60_math.AbsBase60.from_commas('4,16;54')
+    b = base_60_math.AbsBase60.from_commas('4,0;7')
+    c = base_60_math.lazy_addition(a, b)
+    assert str(c) == str('8,17;1')
+    assert str(c) == str(base_60_math.lazy_addition(b, a))
+
+
 ###############
+def test_base60_str():
+    a = base_60_math.Base60.from_commas('3,4;12')
+    assert str(a) == '3,4;12'
 
 
 def test_comparator_truthy():
     assert base_60_math.comparator([30, 27], [59]) == (True, False,)
     assert base_60_math.comparator([30, 27], [19, 39]) == (True, False,)
     assert base_60_math.comparator([30, 27], [30, 26]) == (True, False,)
-    assert base_60_math.comparator(reverse([20, 40, 30]), reverse([40, 5, 5]), True) == (True,False,)
+    assert base_60_math.comparator(reverse([20, 40, 30]), reverse([40, 5, 5]), True) == (True, False,)
     assert base_60_math.comparator([30, 27], [30, 27]) == (False, True,)
 
 
@@ -97,3 +123,14 @@ def test_prep_compare():
 
     assert base_60_math.prep_compare([1, 2, 1, 1], [1, 1], True, True) == tuple([reverse(i) for i in a])
     assert base_60_math.prep_compare([1, 2, 1, 1], [1, 1], False, True) == tuple([reverse(i) for i in b])
+
+
+def test_int_to_base():
+    a = base_60_math.int_to_base(478, 60)
+    assert a == [7, 58]
+
+
+def test_sort():
+    init_ = [base_60_math.AbsBase60.from_integer(i) for i in [661, 409, 7236, 1976, 2764]]
+    final = [base_60_math.AbsBase60.from_integer(i) for i in sorted([661, 409, 7236, 1976, 2764])]
+    assert base_60_math.sort(init_) == final
