@@ -405,7 +405,7 @@ def subtract_fraction(l1, l2):
     return added_list, holdover
 
 
-def lazy_subtraction(subtractee: Base60 | AbsBase60, subtractor: Base60 | AbsBase60):
+def lazy_subtraction(subtractee: Base60 | AbsBase60, subtractor: Base60 | AbsBase60) -> Base60:
     if abs(subtractee) == abs(subtractor):
         return Base60.zero()
     elif abs(subtractee) > abs(subtractor):

@@ -86,10 +86,10 @@ def test_lazy_sub():
     b = base_60_math.lazy_subtraction(base_60_math.Base60.from_commas('1,12;6'),
                                       base_60_math.Base60.from_commas('4,16;18'))
     expected = base_60_math.Base60.from_commas('3,4;12')
-    assert str(a[0]) == str(expected)
-    assert str(b[0]) == str(expected)
-    assert a[1] is False
-    assert b[1] is True
+    assert str(a) == str(expected)
+    assert str(b) == str(expected)
+    assert a.negative is False
+    assert b.negative is True
 
 
 def test_lazy_add():
