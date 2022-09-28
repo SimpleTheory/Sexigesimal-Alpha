@@ -4,11 +4,40 @@ import random
 import pysnooper
 
 
+# Wrappers -------------------------------------------------------------------------------------------------------------
+def absolute(func):
+    def wrapper(self, other):
+        if isinstance(other, Base60):
+            other = abs(Base60)
+        elif isinstance(other, int):
+            other = AbsBase60.from_integer(other)
+
+        val = func(self, other)
+        return val
+
+    return wrapper
+
+
+def copy_args(func):
+    def wrapper(*args, **kwargs):
+        new_args = [copy.copy(i) for i in args]
+        new_kwargs = {k: copy.copy(v) for k, v in kwargs.items()}
+        val = func(*new_args, **new_kwargs)
+        return val
+
+    return wrapper
+
+
+# Classes --------------------------------------------------------------------------------------------------------------
 class Base60:
     def __init__(self, number, negative, fraction=None):
         self.number: list = number
         self.fraction: list = fraction
         self.negative: bool = negative
+
+    @classmethod
+    def zero(cls):
+        return cls([0], False, [])
 
     @classmethod
     def from_commas(cls, commas: str):
@@ -51,7 +80,7 @@ class Base60:
 class AbsBase60:
     def __init__(self, number, fraction=None):
         self.number: list = number
-        self.fraction: list = fraction
+        self.fraction: list = fraction if fraction else []
 
     def __repr__(self):
         return f'{(int(self))} | {str(self)}'
@@ -64,6 +93,10 @@ class AbsBase60:
             return cls([abs(int(i)) for i in number.split(',')], [abs(int(i)) for i in fractions.split(',')])
         else:
             return cls([abs(int(i)) for i in commas.split(',')])
+
+    @classmethod
+    def zero(cls):
+        return cls([0], [])
 
     @classmethod
     def from_code(cls):
@@ -96,22 +129,33 @@ class AbsBase60:
     def __int__(self):
         return sum([v * (60 ** i) for i, v in enumerate(self.number.__reversed__())])
 
+    @absolute
     def __gt__(self, other):
         return abs_base60_comparator(self, other)[0]
 
+    @absolute
     def __ge__(self, other):
         return (abs_base60_comparator(self, other)[0]) or (abs_base60_comparator(self, other)[1])
 
-    @pysnooper.snoop()
+    @absolute
     def __lt__(self, other):
-        print(not abs_base60_comparator(self, other)[0])
         return not abs_base60_comparator(self, other)[0] and (not abs_base60_comparator(self, other)[1])
 
+    @absolute
     def __le__(self, other):
         return (not abs_base60_comparator(self, other)[0]) or abs_base60_comparator(self, other)[1]
 
+    @absolute
     def __eq__(self, other):
         return abs_base60_comparator(self, other)[1]
+
+    @absolute
+    def __add__(self, other):
+        return abs(lazy_addition(self, other))
+
+    @absolute
+    def __sub__(self, other):
+        return abs(lazy_subtraction(self, other))
 
     def __abs__(self):
         return self
@@ -120,7 +164,7 @@ class AbsBase60:
         return AbsBase60(copy.copy(self.number), copy.copy(self.fraction))
 
 
-###################
+# Misc -----------------------------------------------------------------------------------------------------------------
 def swap(x, y): return y, x,
 
 
@@ -130,7 +174,10 @@ def stringify(x): return [str(i) for i in x]
 def absolutify(x): return [abs(i) for i in x]
 
 
-# ----
+def reverse(x): return x[::-1]
+
+
+# Unit Mathematics -----------------------------------------------------------------------------------------------------
 def base60_unit_addition(num1, num2):
     temp = num1 + num2
     q, m = euclidean_division(temp, 60)
@@ -151,16 +198,16 @@ def euclidean_division(dividend, divisor):
     return quotient, mod
 
 
-#################
+# Formatting and Comparative -------------------------------------------------------------------------------------------
 def prep_compare(l1, l2, number=True, reversed_=False):
     rl1 = l1[:]
     rl2 = l2[:]
     len_diff = len(rl1) - len(rl2)
     if number:
         if len_diff > 0:
-            rl2 = [0 for _ in range(len_diff)] + rl2
+            rl2 = [0 for _ in range(abs(len_diff))] + rl2
         elif len_diff < 0:
-            rl1 = [0 for _ in range(len_diff)] + rl1
+            rl1 = [0 for _ in range(abs(len_diff))] + rl1
     else:
         if len_diff > 0:
             rl2.extend([0 for _ in range(len_diff)])
@@ -211,7 +258,7 @@ def int_to_base(integer, base):
     # if the quotient is less than 60 return it
     # otherwise rerun the function with the quotient and append modulus to list
     if integer == 0:
-        return [0]
+        return Base60.zero()
 
     answer = []
 
@@ -228,7 +275,6 @@ def int_to_base(integer, base):
     return answer
 
 
-@pysnooper.snoop()
 def abs_base60_comparator(n1, n2):
     gr, eq = comparator(n1.number, n2.number)
     if gr:
@@ -259,7 +305,11 @@ def return_max(self: Base60, other: Base60) -> Base60:
         return other
 
 
-###################
+def reflect60(n: list): return [60 - i for i in n]
+
+
+# Arithmetic Functions -------------------------------------------------------------------------------------------------
+@pysnooper.snoop()
 def add_items_in_list_number(l1, l2):
     rl1, rl2 = prep_compare(l1, l2, True, True)
 
@@ -292,13 +342,10 @@ def add_items_in_list_fraction(l1, l2):
 
 
 @pysnooper.snoop()
-def lazy_addition(number1: Base60, number2: Base60):
+def lazy_addition(number1: Base60 | AbsBase60, number2: Base60 | AbsBase60):
     n1 = number1.copy()
     n2 = number2.copy()
-    print(f'{number1.number}')
-    print(n1.number)
-    print(f'{id(n1)} - {id(number1)}')
-    print(f'{id(n1.number)} - {id(number1.number)}')
+
     if n1.fraction and n2.fraction:
         fraction, holdover = add_items_in_list_fraction(n1.fraction, n2.fraction)
         n1.number[-1] += holdover
@@ -307,11 +354,11 @@ def lazy_addition(number1: Base60, number2: Base60):
     elif n2.fraction:
         fraction = n2.fraction
     else:
-        fraction = None
+        fraction = []
+
     sum_ = add_items_in_list_number(n1.number, n2.number)
-    print(number1.number)
-    print(n1.number)
-    return Base60(sum_, None, fraction=fraction)
+
+    return AbsBase60(sum_, fraction=fraction)
 
 
 # ----
@@ -337,15 +384,12 @@ def subtract_number(l1, l2):
     return added_list
 
 
-def reverse(x): return x[::-1]
-
-
 def subtract_fraction(l1, l2):
     holdover = 0
     rl1, rl2 = prep_compare(l1, l2, False, True)
     gr, eq = comparator(reverse(rl1), reverse(rl2), True)
     if eq:
-        return [0]
+        return []
     if not gr:
         rl1, rl2 = swap(rl1, rl2)
         holdover = -1
@@ -361,13 +405,9 @@ def subtract_fraction(l1, l2):
     return added_list, holdover
 
 
-def reflect60(n: list): return [60 - i for i in n]
-
-
-@pysnooper.snoop()
-def lazy_subtraction(subtractee: Base60, subtractor: Base60):
+def lazy_subtraction(subtractee: Base60 | AbsBase60, subtractor: Base60 | AbsBase60):
     if abs(subtractee) == abs(subtractor):
-        return Base60([0], False)
+        return Base60.zero()
     elif abs(subtractee) > abs(subtractor):
         subtractee_copy = subtractee.copy()
         subtractor_copy = subtractor.copy()
@@ -389,10 +429,49 @@ def lazy_subtraction(subtractee: Base60, subtractor: Base60):
     else:
         fraction = None
     sum_ = subtract_number(subtractee_copy.number, subtractor_copy.number)
-    return Base60(sum_, None, fraction=fraction), negative
+    return Base60(sum_, negative, fraction=fraction)
 
 
-########################
+# Multiplicative -------------------------------------------------------------------------------------------------------
+
+@copy_args
+@pysnooper.snoop()
+def int_multiplication(n1, n2):
+    n1, n2 = absolutify([n1, n2])
+    sum_ = AbsBase60.zero()
+    for i in range(int(n2)):
+        sum_ += n1
+    return sum_
+
+
+def remove_0s_from_end(x):
+    if not x:
+        return []
+    return reverse([i for i in x.__reversed__() if i])
+
+
+@copy_args
+def multiply_by_fraction(n1, n2):  # @TODO
+    pass
+
+
+@copy_args
+def multiply_fractions(f1, f2):  # @TODO
+    pass
+
+
+@copy_args
+def multiply(n1: Base60 | AbsBase60, n2: AbsBase60 | Base60):
+    n1.fraction = remove_0s_from_end(n1.fraction)
+    n2.fraction = remove_0s_from_end(n2.fraction)
+    n1_whole = {'number': n1.number + n1.fraction, 'seximals': len(n1.fraction)}
+    n2_whole = {'number': n2.number + n2.fraction, 'seximals': len(n2.fraction)}
+    total_seximals = n1_whole['seximals'] + n2_whole['seximals']
+    total_whole_num = int_multiplication(n1_whole['number'], n2_whole['number'])
+    new_fractions = total_whole_num[:]
+
+
+# Base 60 Sorting ------------------------------------------------------------------------------------------------------
 
 
 def partition(first_index, last_index, nums_):
@@ -405,7 +484,6 @@ def partition(first_index, last_index, nums_):
     return index_swap_iterative
 
 
-@pysnooper.snoop()
 def quicksort(first_i, last_i, nums):
     if last_i is None:
         last_i = len(nums) - 1
@@ -446,12 +524,11 @@ if __name__ == '__main__':
     #     print(int(i))
     a = AbsBase60.from_commas('4,16;54')
     b = AbsBase60.from_commas('4,0;7')
-    print(a)
-    print(id(a))
-    print(id(a.number))
-    c = lazy_addition(a, b)
-    print(a)
-    print(c)
+    a2 = Base60.from_integer(43)
+    a1 = Base60.from_integer(437)
+    print([int_multiplication(a1, a2)])
+    print(a1, a2)
+    print(f'expected {43*437}')
 
     # print(b >= a)
     # print(a >= c)

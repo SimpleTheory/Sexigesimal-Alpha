@@ -35,6 +35,11 @@ def test_add_items_in_list_number():
     assert c == [2, 2, 2, 7, 10]
     assert base_60_math.add_items_in_list_number([59, 59, 59, 59], [59, 59, 59, 59]) == [1, 59, 59, 119 - 60, 118 - 60]
 
+def test_add_items_in_list_number2():
+    a = [7,17]
+    b = [6]
+    assert base_60_math.add_items_in_list_number(a, b) == [7,23]
+    assert base_60_math.add_items_in_list_number(b, a) == [7,23]
 
 def test_add_items_in_list_fraction():
     assert base_60_math.add_items_in_list_fraction([30, 40, 20], [5, 5, 40]) == ([35, 46, 0], 0,)
@@ -69,7 +74,7 @@ def test_subtraction_fraction():
     a = base_60_math.Base60.from_commas('1,2,3,4,5')
     b = base_60_math.Base60.from_commas('59,59,3,5')
     c = base_60_math.subtract_fraction(a.number, b.number)
-    #  [59,59,3, 5, 0]
+    #  [59,59,3, 5, 0]e
     #  [1, 2, 3, 4, 5]
     # 1[1, 1, 6, 9, 5]
     assert c == ([58, 57, 0, 0, 55], -1,)
@@ -94,6 +99,13 @@ def test_lazy_add():
     assert str(c) == str('8,17;1')
     assert str(c) == str(base_60_math.lazy_addition(b, a))
 
+def test_lazy_add_int():
+    int_ = 6+437
+    a = base_60_math.AbsBase60.from_integer(6)
+    b = base_60_math.AbsBase60.from_integer(437)
+    expected = base_60_math.AbsBase60.from_integer(int_)
+    assert base_60_math.lazy_addition(a, b) == base_60_math.lazy_addition(b, a)
+    assert base_60_math.lazy_addition(a, b) == expected
 
 ###############
 def test_base60_str():
