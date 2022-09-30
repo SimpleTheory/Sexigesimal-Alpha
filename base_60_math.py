@@ -1,8 +1,6 @@
 import copy
 import functools
-import random
 import pysnooper
-from collections.abc import Iterable
 
 
 # Wrappers -------------------------------------------------------------------------------------------------------------
@@ -94,7 +92,7 @@ class AbsBase60:
     def is_int(self):
         if not self.fraction:
             return True
-        elif False not in [i == 0 for i in self.fraction]:
+        elif not remove_0s_from_end(self.fraction):
             return True
         return False
 
@@ -306,7 +304,7 @@ def base_unit_round(unit: int):
         return 60
 
 
-# Formatting and Comparative -------------------------------------------------------------------------------------------
+# Formatting -----------------------------------------------------------------------------------------------------------
 def prep_compare(l1, l2, number=True, reversed_=False):
     rl1 = l1[:]
     rl2 = l2[:]
@@ -329,6 +327,34 @@ def prep_compare(l1, l2, number=True, reversed_=False):
     return rl1, rl2
 
 
+def carry_over_reformat_base(ls: list):
+    """
+    List argument must be SMALLEST -> BIGGEST!
+
+    :param ls: List to perform this on MUST BE REVERSED
+    :return:
+    """
+    if [i for i in ls if i >= 60]:
+        carry_over = 0
+        temp_ls = []
+
+        for v in ls:
+            v += carry_over
+            carry_over = 0
+            while v >= 60:
+                carry_over += 1
+                v -= 60
+            temp_ls.append(v)
+
+        if carry_over:
+            temp_ls.append(carry_over)
+
+        return temp_ls
+
+    return ls
+
+
+# Comparison -----------------------------------------------------------------------------------------------------------
 def comparator(self, other, fraction=False) -> tuple[bool, bool]:
     """
     Greater than operator with additional == value to be a base for all operators
@@ -361,28 +387,6 @@ def comparator(self, other, fraction=False) -> tuple[bool, bool]:
     return False, True
 
 
-def int_to_base(integer, base):
-    # find how many times it goes to 60
-    # if the quotient is less than 60 return it
-    # otherwise rerun the function with the quotient and append modulus to list
-    if integer == 0:
-        return Base60.zero()
-
-    answer = []
-
-    def recurse(num):
-        quotient, mod = euclidean_division(num, base)
-        answer.insert(0, mod)
-        if quotient < base:
-            if quotient > 0:
-                answer.insert(0, quotient)
-            return
-        recurse(quotient)
-
-    recurse(integer)
-    return answer
-
-
 def abs_base60_comparator(n1, n2):
     gr, eq = comparator(n1.number, n2.number)
     if gr:
@@ -413,34 +417,31 @@ def return_max(self: Base60, other: Base60) -> Base60:
         return other
 
 
+# Conversions & Misc Basemath ------------------------------------------------------------------------------------------
+def int_to_base(integer, base):
+    # find how many times it goes to 60
+    # if the quotient is less than 60 return it
+    # otherwise rerun the function with the quotient and append modulus to list
+    if integer == 0:
+        return Base60.zero()
+
+    answer = []
+
+    def recurse(num):
+        quotient, mod = euclidean_division(num, base)
+        answer.insert(0, mod)
+        if quotient < base:
+            if quotient > 0:
+                answer.insert(0, quotient)
+            return
+        recurse(quotient)
+
+    recurse(integer)
+    return answer
+
+
 def reflect60(n: list): return [60 - i for i in n]
 
-
-def carry_over_reformat_base(ls: list):
-    """
-    List argument must be SMALLEST -> BIGGEST!
-
-    :param ls: List to perform this on MUST BE REVERSED
-    :return:
-    """
-    if [i for i in ls if i >= 60]:
-        carry_over = 0
-        temp_ls = []
-
-        for v in ls:
-            v += carry_over
-            carry_over = 0
-            while v >= 60:
-                carry_over += 1
-                v -= 60
-            temp_ls.append(v)
-
-        if carry_over:
-            temp_ls.append(carry_over)
-
-        return temp_ls
-
-    return ls
 
 # Arithmetic Functions -------------------------------------------------------------------------------------------------
 def add_items_in_list_number(l1, l2):
@@ -493,7 +494,7 @@ def lazy_addition(number1: Base60 | AbsBase60, number2: Base60 | AbsBase60):
     return AbsBase60(sum_, fraction=fraction)
 
 
-# ---- Subtraction
+# Subtraction ----------------------------------------------------------------------------------------------------------
 def subtract_number(l1, l2):
     gr, eq = comparator(l1, l2)
     if eq:
@@ -595,16 +596,6 @@ def remove_0s_from_end(x, end=True):
             if not new_ls:
                 return []
     return new_ls
-
-
-@copy_args
-def multiply_by_fraction(n1, n2):  # @TODO
-    pass
-
-
-@copy_args
-def multiply_fractions(f1, f2):  # @TODO
-    pass
 
 
 @copy_args

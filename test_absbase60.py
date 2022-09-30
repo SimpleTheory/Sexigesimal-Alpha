@@ -39,16 +39,11 @@ def test_abs_lt():
 
 
 def test_abs_add():
-    print()
     a = base_60_math.AbsBase60.from_integer(437)
-    print(a)
     b = base_60_math.AbsBase60.zero()
-    print(a + b)
     assert a + b == a
     c = base_60_math.AbsBase60.from_integer(6)
     d = 6 + 437
-    print(base_60_math.AbsBase60.from_integer(d))
-    print(c + a)
     assert c + a == base_60_math.AbsBase60.from_integer(d)
 
 
