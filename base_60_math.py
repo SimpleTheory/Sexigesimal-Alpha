@@ -61,6 +61,33 @@ class AbsBase60:
     def from_integer(cls, integer: int):
         return cls(int_to_base(integer, 60), [])
 
+    @staticmethod
+    def from_float(decimal: float):
+        # round decimal to ten places
+        # decimal = round(decimal, 10)
+        # the float * 60**i until is int
+        for i in range(101):
+            current_answer = float(decimal * (60 ** i))
+            if current_answer.is_integer():
+                return WholeBase60Number(AbsBase60.from_integer(int(current_answer)).number, i, True).to_Abs60()
+                # then that from_int(int).numberize(i).to_Abs60()
+
+        # if is not int after 100 digits
+        # round the int at that place and convert
+        # run the round scheme on the number and return
+
+    # TODO: Make a rounding scheme such that if a number is 60 it is 0 and adds to the next number
+    @copy_args
+    def round(self, place=None):
+        if place:
+            self.fraction = self.fraction[:place]
+        elif place == 0:
+            self.fraction = []
+        whole_number = self.wholenumberize(True)
+        whole_number.number[0] = base_unit_round(whole_number.number[0])
+        whole_number.number = carry_over_reformat_base(whole_number.number)
+        return whole_number.to_Abs60()
+
     def copy(self):
         return copy.copy(self)
 
@@ -90,8 +117,7 @@ class AbsBase60:
 
     def __float__(self):
         whole_number = self.wholenumberize()
-        return int(whole_number) / (60**whole_number.seximals)
-
+        return int(whole_number) / (60 ** whole_number.seximals)
 
     @absolute
     def __gt__(self, other):
@@ -273,6 +299,13 @@ def euclidean_division(dividend, divisor):
     return quotient, mod
 
 
+def base_unit_round(unit: int):
+    if unit < 30:
+        return 0
+    else:
+        return 60
+
+
 # Formatting and Comparative -------------------------------------------------------------------------------------------
 def prep_compare(l1, l2, number=True, reversed_=False):
     rl1 = l1[:]
@@ -382,6 +415,32 @@ def return_max(self: Base60, other: Base60) -> Base60:
 
 def reflect60(n: list): return [60 - i for i in n]
 
+
+def carry_over_reformat_base(ls: list):
+    """
+    List argument must be SMALLEST -> BIGGEST!
+
+    :param ls: List to perform this on MUST BE REVERSED
+    :return:
+    """
+    if [i for i in ls if i >= 60]:
+        carry_over = 0
+        temp_ls = []
+
+        for v in ls:
+            v += carry_over
+            carry_over = 0
+            while v >= 60:
+                carry_over += 1
+                v -= 60
+            temp_ls.append(v)
+
+        if carry_over:
+            temp_ls.append(carry_over)
+
+        return temp_ls
+
+    return ls
 
 # Arithmetic Functions -------------------------------------------------------------------------------------------------
 def add_items_in_list_number(l1, l2):

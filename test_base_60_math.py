@@ -176,12 +176,25 @@ def test_wholenumber_self_reverse():
     b.toggle_reverse()
     assert b.number == [4, 16, 54, 8] and b.reversed is False
 
+
 def test_wholenumber_int():
-    a = base_60_math.WholeBase60Number([1,1,6], 0)
-    b = base_60_math.WholeBase60Number([1,1,6], 0)
+    a = base_60_math.WholeBase60Number([1, 1, 6], 0)
+    b = base_60_math.WholeBase60Number([1, 1, 6], 0)
     assert int(a) == 3666
     assert int(b) == 3666
+
 
 def test_inverse():
     a = base_60_math.inverse(base_60_math.AbsBase60.from_commas('2;30'))
     assert a == base_60_math.AbsBase60.from_commas(';24')
+
+
+def test_carry_over_reformat_base():
+    a = base_60_math.carry_over_reformat_base([43, 108, 70, 67, 23, 137])
+    assert base_60_math.carry_over_reformat_base([60, 59, 59, 59, 59]) == [0, 0, 0, 0, 0, 1]
+    assert a == [43, 48, 11, 8, 24, 17, 2]
+
+def test_wholenumber_to_abs():
+    a = base_60_math.AbsBase60.from_commas('4,16;54,8,0')
+    b = a.wholenumberize().to_Abs60()
+    assert b==a
