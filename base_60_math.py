@@ -76,13 +76,14 @@ class AbsBase60:
 
     # TODO: Make a rounding scheme such that if a number is 60 it is 0 and adds to the next number
     @copy_args
+    @pysnooper.snoop()
     def round(self, place=None):
         if place:
             self.fraction = self.fraction[:place]
         elif place == 0:
             self.fraction = []
         whole_number = self.wholenumberize(True)
-        whole_number.number[0] = base_unit_round(whole_number.number[0])
+        whole_number.number[0] = 60
         whole_number.number = carry_over_reformat_base(whole_number.number)
         return whole_number.to_Abs60()
 
@@ -231,9 +232,10 @@ class WholeBase60Number:
 
     @copy_args
     def to_Abs60(self):
-        self.reverse()
+        self.un_reverse()
         fraction = self.number[:self.seximals]
         fraction.reverse()
+        fraction = remove_0s_from_end(fraction)
         number = self.number[self.seximals:]
         number.reverse()
         return AbsBase60(number, fraction)
@@ -326,7 +328,7 @@ def prep_compare(l1, l2, number=True, reversed_=False):
 
     return rl1, rl2
 
-
+@pysnooper.snoop()
 def carry_over_reformat_base(ls: list):
     """
     List argument must be SMALLEST -> BIGGEST!

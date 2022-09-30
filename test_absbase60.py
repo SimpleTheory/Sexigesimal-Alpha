@@ -49,3 +49,16 @@ def test_abs_add():
 
 def test_abs_to_float():
     assert float(base_60_math.AbsBase60.from_commas('1,16;15')) == 76.25
+
+
+def test_abs_round():
+    assert base_60_math.AbsBase60.from_commas('2;59,59,59,59,30').round() \
+           == base_60_math.AbsBase60.from_integer(3)
+
+
+def test_abs_from_float():
+    assert base_60_math.AbsBase60.from_float(76.25) == base_60_math.AbsBase60.from_commas('1,16;15')
+
+
+def test_abs_from_float_thirds():
+    assert base_60_math.AbsBase60.from_float(1 / 3) == base_60_math.AbsBase60.from_commas(';20')
