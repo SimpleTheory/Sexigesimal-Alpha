@@ -1,0 +1,1 @@
+Add type hinting to all variables and functions

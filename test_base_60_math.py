@@ -194,7 +194,15 @@ def test_carry_over_reformat_base():
     assert base_60_math.carry_over_reformat_base([60, 59, 59, 59, 59]) == [0, 0, 0, 0, 0, 1]
     assert a == [43, 48, 11, 8, 24, 17, 2]
 
+
 def test_wholenumber_to_abs():
     a = base_60_math.AbsBase60.from_commas('4,16;54,8,0')
     b = a.wholenumberize().to_Abs60()
-    assert b==a
+    assert b == a
+
+
+def test_divide():
+    a = base_60_math.AbsBase60.from_commas('2;30')
+    b = base_60_math.AbsBase60.from_commas('1;30')
+    c = base_60_math.lazy_division(a, b)
+    assert c == base_60_math.AbsBase60.from_commas('1;40')

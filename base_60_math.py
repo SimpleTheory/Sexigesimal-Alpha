@@ -609,13 +609,12 @@ def multiply(n1: Base60 | AbsBase60, n2: AbsBase60 | Base60):
     r_twn = reverse(total_whole_num.number)
     fraction = r_twn[:total_seximals]
     numbers = r_twn[total_seximals:]
-    fraction.reversed()
-    numbers.reversed()
+    fraction.reverse()
+    numbers.reverse()
     return AbsBase60(numbers, fraction)
 
 
 # Division -------------------------------------------------------------------------------------------------------------
-@pysnooper.snoop()
 def inverse(number: AbsBase60):
     whole_number = number.wholenumberize()
     for i in range(10000):
