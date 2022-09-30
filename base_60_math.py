@@ -4,6 +4,7 @@ import random
 import pysnooper
 from collections.abc import Iterable
 
+
 # Wrappers -------------------------------------------------------------------------------------------------------------
 def absolute(func):
     def wrapper(self, other):
@@ -29,54 +30,6 @@ def copy_args(func):
 
 
 # Classes --------------------------------------------------------------------------------------------------------------
-class Base60:
-    def __init__(self, number, negative, fraction=None):
-        self.number: list = number
-        self.fraction: list = fraction
-        self.negative: bool = negative
-
-    @classmethod
-    def zero(cls):
-        return cls([0], False, [])
-
-    @classmethod
-    def from_commas(cls, commas: str):
-        commas = commas.strip()
-        negative = commas.startswith('-')
-        if ';' in commas:
-            number, fractions = commas.split(';', 1)
-            return cls([int(i) for i in number.split(',')], negative, [int(i) for i in fractions.split(',')])
-        else:
-            return cls([int(i) for i in commas.split(',')], negative)
-
-    @classmethod
-    def from_code(cls):
-        pass
-
-    @classmethod
-    def from_integer(cls, integer: int):
-        return cls(int_to_base(integer, 60), integer < 0)
-
-    def copy(self):
-        return Base60(self.number, self.negative, self.fraction)
-
-    def __str__(self):
-        n = ','.join(stringify(self.number))
-        if self.fraction:
-            f = ','.join(stringify(self.fraction))
-            return f'{n};{f}'
-        return n
-
-    def __int__(self):
-        return sum([v * (60 ** i) for i, v in enumerate(self.number.__reversed__())])
-
-    def __abs__(self):
-        return AbsBase60(self.number, self.fraction)
-
-    def __copy__(self):
-        return Base60(copy.copy(self.number), copy.copy(self.negative), copy.copy(self.fraction))
-
-
 class AbsBase60:
     def __init__(self, number, fraction=None):
         self.number: list = number
@@ -90,6 +43,8 @@ class AbsBase60:
         commas = commas.strip()
         if ';' in commas:
             number, fractions = commas.split(';', 1)
+            if number == '':
+                return cls([], [abs(int(i)) for i in fractions.split(',')])
             return cls([abs(int(i)) for i in number.split(',')], [abs(int(i)) for i in fractions.split(',')])
         else:
             return cls([abs(int(i)) for i in commas.split(',')])
@@ -104,7 +59,7 @@ class AbsBase60:
 
     @classmethod
     def from_integer(cls, integer: int):
-        return cls(int_to_base(integer, 60), integer < 0)
+        return cls(int_to_base(integer, 60), [])
 
     def copy(self):
         return copy.copy(self)
@@ -119,6 +74,10 @@ class AbsBase60:
     def is_float(self):
         return not self.is_int()
 
+    def wholenumberize(self, reverse_=False):
+        new_frac = remove_0s_from_end(self.fraction)
+        return WholeBase60Number(self.number + new_frac, len(new_frac), reverse_)
+
     def __str__(self):
         n = ','.join(stringify(self.number))
         if self.fraction:
@@ -128,6 +87,11 @@ class AbsBase60:
 
     def __int__(self):
         return sum([v * (60 ** i) for i, v in enumerate(self.number.__reversed__())])
+
+    def __float__(self):
+        whole_number = self.wholenumberize()
+        return int(whole_number) / (60**whole_number.seximals)
+
 
     @absolute
     def __gt__(self, other):
@@ -162,6 +126,113 @@ class AbsBase60:
 
     def __copy__(self):
         return AbsBase60(copy.copy(self.number), copy.copy(self.fraction))
+
+
+class Base60(AbsBase60):
+    def __init__(self, number, negative, fraction=None):
+        super(Base60, self).__init__(number, fraction)
+        self.negative: bool = negative
+
+    @classmethod
+    def zero(cls):
+        return cls([0], False, [])
+
+    @classmethod
+    def from_commas(cls, commas: str):
+        commas = commas.strip()
+        negative = commas.startswith('-')
+        if ';' in commas:
+            number, fractions = commas.split(';', 1)
+            return cls([int(i) for i in number.split(',')], negative, [int(i) for i in fractions.split(',')])
+        else:
+            return cls([int(i) for i in commas.split(',')], negative)
+
+    @classmethod
+    def from_code(cls):
+        pass
+
+    @classmethod
+    def from_integer(cls, integer: int):
+        return cls(int_to_base(integer, 60), integer < 0)
+
+    def copy(self):
+        return copy.copy(self)
+
+    def __str__(self):
+        n = ','.join(stringify(self.number))
+        if self.fraction:
+            f = ','.join(stringify(self.fraction))
+            return f'{n};{f}'
+        return n
+
+    def __int__(self):
+        return sum([v * (60 ** i) for i, v in enumerate(self.number.__reversed__())])
+
+    def __abs__(self):
+        return AbsBase60(self.number, self.fraction)
+
+    def __copy__(self):
+        return Base60(copy.copy(self.number), copy.copy(self.negative), copy.copy(self.fraction))
+
+
+class WholeBase60Number:
+
+    def __init__(self, number, fractional_length, reverse_=False):
+        self.number: list = number
+        self.seximals: int = fractional_length
+        self.reversed: bool = reverse_
+        if reverse_:
+            self.number.reverse()
+
+    @classmethod
+    def from_base60_number(cls, b60num: AbsBase60, reverse_=False):
+        frac_len = len(remove_0s_from_end(b60num.fraction))
+        return cls(b60num.number + b60num.fraction, frac_len, reverse_)
+
+    def toggle_reverse(self):
+        self.number.reverse()
+        self.reversed = not self.reversed
+
+    def reverse(self):
+        if self.reversed is True:
+            return
+        else:
+            self.toggle_reverse()
+
+    def un_reverse(self):
+        if self.reversed is False:
+            return
+        else:
+            self.toggle_reverse()
+
+    @copy_args
+    def to_Abs60(self):
+        self.reverse()
+        fraction = self.number[:self.seximals]
+        fraction.reverse()
+        number = self.number[self.seximals:]
+        number.reverse()
+        return AbsBase60(number, fraction)
+
+    def __int__(self):
+        if not self.reversed:
+            iter_ls = self.copy(reversed_=True).number
+        else:
+            iter_ls = self.number
+        return sum([v * (60 ** i) for i, v in enumerate(iter_ls)])
+
+    def copy(self, reversed_=False):
+        if not reversed_:
+            return copy.copy(self)
+        else:
+            a = copy.copy(self)
+            a.toggle_reverse()
+            return a
+
+    def __copy__(self):
+        return WholeBase60Number(copy.copy(self.number), copy.copy(self.seximals), copy.copy(self.reversed))
+
+    base = 60
 
 
 # Misc -----------------------------------------------------------------------------------------------------------------
@@ -448,10 +519,23 @@ def int_multiplication(n1, n2):
     return sum_
 
 
-def remove_0s_from_end(x):
+def remove_0s_from_end(x, end=True):
     if not x:
         return []
-    return reverse([i for i in x.__reversed__() if i])
+    elif len(x) == 0:
+        return []
+    new_ls = x.copy()
+    if end:
+        while new_ls[-1] == 0:
+            new_ls = new_ls[:-1]
+            if not new_ls:
+                return []
+    else:
+        while new_ls[0] == 0:
+            new_ls = new_ls[1:]
+            if not new_ls:
+                return []
+    return new_ls
 
 
 @copy_args
@@ -475,9 +559,31 @@ def multiply(n1: Base60 | AbsBase60, n2: AbsBase60 | Base60):
     r_twn = reverse(total_whole_num.number)
     fraction = r_twn[:total_seximals]
     numbers = r_twn[total_seximals:]
-    fraction.reverse()
-    numbers.reverse()
+    fraction.reversed()
+    numbers.reversed()
     return AbsBase60(numbers, fraction)
+
+
+# Division -------------------------------------------------------------------------------------------------------------
+@pysnooper.snoop()
+def inverse(number: AbsBase60):
+    whole_number = number.wholenumberize()
+    for i in range(10000):
+        current_answer: float = (60 ** (whole_number.seximals + i)) / int(whole_number)
+        # Base case
+        if current_answer.is_integer():
+            # i is the fractionality
+            r_twn = WholeBase60Number(AbsBase60.from_integer(int(current_answer)).number, i, True)
+            return r_twn.to_Abs60()
+
+    current_answer: float = (60 ** (whole_number.seximals + 10002)) / int(whole_number)
+    r_twn = WholeBase60Number(AbsBase60.from_integer(round(current_answer)).number, 10002, True)
+    return r_twn.to_Abs60()
+
+
+def lazy_division(dividend, divisor):
+    return multiply(dividend, inverse(divisor))
+
 
 # Base 60 Sorting ------------------------------------------------------------------------------------------------------
 
@@ -536,7 +642,7 @@ if __name__ == '__main__':
     a1 = Base60.from_integer(437)
     print([int_multiplication(a1, a2)])
     print(a1, a2)
-    print(f'expected {43*437}')
+    print(f'expected {43 * 437}')
 
     # print(b >= a)
     # print(a >= c)

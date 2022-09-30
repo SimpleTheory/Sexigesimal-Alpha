@@ -118,11 +118,11 @@ def test_base60_str():
 
 
 def test_comparator_truthy():
-    assert base_60_math.comparator([30, 27], [59]) == (True, False,)
-    assert base_60_math.comparator([30, 27], [19, 39]) == (True, False,)
-    assert base_60_math.comparator([30, 27], [30, 26]) == (True, False,)
-    assert base_60_math.comparator(reverse([20, 40, 30]), reverse([40, 5, 5]), True) == (True, False,)
-    assert base_60_math.comparator([30, 27], [30, 27]) == (False, True,)
+    assert base_60_math.comparator([30, 27], [59]) == (True, False)
+    assert base_60_math.comparator([30, 27], [19, 39]) == (True, False)
+    assert base_60_math.comparator([30, 27], [30, 26]) == (True, False)
+    assert base_60_math.comparator(reverse([20, 40, 30]), reverse([40, 5, 5]), True) == (True, False)
+    assert base_60_math.comparator([30, 27], [30, 27]) == (False, True)
 
 
 def test_comparator_falsey():
@@ -150,3 +150,38 @@ def test_sort():
     init_ = [base_60_math.AbsBase60.from_integer(i) for i in [661, 409, 7236, 1976, 2764]]
     final = [base_60_math.AbsBase60.from_integer(i) for i in sorted([661, 409, 7236, 1976, 2764])]
     assert base_60_math.sort(init_) == final
+
+
+def test_remove_0s_from_end():
+    assert base_60_math.remove_0s_from_end([23, 0, 0, 43, 4, 0, 0]) == [23, 0, 0, 43, 4]
+    assert base_60_math.remove_0s_from_end([0]) == []
+
+
+def test_wholenumberizer():
+    a = base_60_math.AbsBase60.from_commas('4,16;54,8,0')
+    b = a.wholenumberize()
+    assert b.number == [4, 16, 54, 8]
+    assert b.seximals == 2
+
+
+def test_wholenumberizer_reverse():
+    a = base_60_math.AbsBase60.from_commas('4,16;54,8,0')
+    b = a.wholenumberize(True)
+    assert b.number == reverse([4, 16, 54, 8]) and b.reversed is True
+
+
+def test_wholenumber_self_reverse():
+    a = base_60_math.AbsBase60.from_commas('4,16;54,8,0')
+    b = a.wholenumberize(True)
+    b.toggle_reverse()
+    assert b.number == [4, 16, 54, 8] and b.reversed is False
+
+def test_wholenumber_int():
+    a = base_60_math.WholeBase60Number([1,1,6], 0)
+    b = base_60_math.WholeBase60Number([1,1,6], 0)
+    assert int(a) == 3666
+    assert int(b) == 3666
+
+def test_inverse():
+    a = base_60_math.inverse(base_60_math.AbsBase60.from_commas('2;30'))
+    assert a == base_60_math.AbsBase60.from_commas(';24')
